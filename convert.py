@@ -3,13 +3,12 @@ from bs4 import BeautifulSoup as bs
 import requests
 import unicodedata
 
-# from jinja2 import Environment, FileSystemLoader
-# from pathlib import Path
+try:
+    from pyinflect import getInflection
+except ImportError:
+    def getInflection(a, b):
+        return a
 
-# templates_dir = Path(__file__).parent
-# templates_dir = templates_dir.absolute()
-# env = Environment(loader=FileSystemLoader(templates_dir))
-# template = env.get_template("verb_he_en.html")
 
 pealim_to_jinja = {
     "AP-ms": "p_x_s_m",
@@ -269,7 +268,11 @@ def convert_verb(soup):
         div = soup.find("div", id=peal)
         word = div.find("span", class_="menukad").text
         # pron = div.find("div", class_="transcription").text
-        meaning = div.find("div", class_="meaning").text
+
+        meaning = div.find("div", class_="meaning").findAll("strong")[-1].text
+
+        if peal.startswith("AP"):
+            meaning = getInflection(meaning, "VBG")
 
         if peal.startswith("IMP"):
             word = word.strip("!\u200f")
@@ -371,8 +374,10 @@ def convert_noun(soup):
     for p in soup.find_all("p"):
         if p.text.startswith("Noun"):
             gender_field = p.text.split(" ")[-1]
-            gender = "נקבה" if "fem" in gender_field else ""
-            gender = "זכר" if "mas" in gender_field else ""
+            if "fem" in gender_field:
+                gender = "נקבה"
+            elif "mas" in gender_field:
+                gender = "זכר"
 
     results = {
         "Hebrew Noun Reversed Type-in": HebrewNoun(
@@ -385,7 +390,7 @@ def convert_noun(soup):
             plural_meaning,
             "",
             "",
-            [gender],
+            [gender] if gender is not None else [],
         )
     }
 
@@ -464,3 +469,4 @@ def translate(url) -> List[str]:
 # translate("https://www.pealim.com/dict/55-lomar/")
 # translate("https://www.pealim.com/dict/8387-amir/")
 # translate("https://www.pealim.com/dict/3801-amur/")
+# translate("https://www.pealim.com/dict/4260-tmuna/")
