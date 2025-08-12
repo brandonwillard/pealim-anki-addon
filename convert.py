@@ -305,7 +305,7 @@ def convert_verb(soup):
         word = div.find("span", class_="menukad").text
         # pron = div.find("div", class_="transcription").text
 
-        meaning = div.find("div", class_="meaning").findAll("strong")[-1].text
+        meaning = div.find("div", class_="meaning").find_all("strong")[-1].text
 
         if peal.startswith("AP"):
             meaning = getInflection(meaning, "VBG")
@@ -438,35 +438,35 @@ def convert_preposition(soup):
 
     s1p_div = t1.find("div", id="P-1s")
     s1p_hebrew = s1p_div.find("span", class_="menukad").parent.text
-    s1p_english = s1p_div.find("div", class_="meaning").findAll("strong")[-1].text
+    s1p_english = s1p_div.find("div", class_="meaning").find_all("strong")[-1].text
     s2m_div = t1.find("div", id="P-2ms")
     s2m_hebrew = s2m_div.find("span", class_="menukad").parent.text
-    s2m_english = s2m_div.find("div", class_="meaning").findAll("strong")[-1].text
+    s2m_english = s2m_div.find("div", class_="meaning").find_all("strong")[-1].text
     s2f_div = t1.find("div", id="P-2fs")
     s2f_hebrew = s2f_div.find("span", class_="menukad").parent.text
-    s2f_english = s2f_div.find("div", class_="meaning").findAll("strong")[-1].text
+    s2f_english = s2f_div.find("div", class_="meaning").find_all("strong")[-1].text
     s3m_div = t1.find("div", id="P-3ms")
     s3m_hebrew = s3m_div.find("span", class_="menukad").parent.text
-    s3m_english = s3m_div.find("div", class_="meaning").findAll("strong")[-1].text
+    s3m_english = s3m_div.find("div", class_="meaning").find_all("strong")[-1].text
     s3f_div = t1.find("div", id="P-3fs")
     s3f_hebrew = s3f_div.find("span", class_="menukad").parent.text
-    s3f_english = s3f_div.find("div", class_="meaning").findAll("strong")[-1].text
+    s3f_english = s3f_div.find("div", class_="meaning").find_all("strong")[-1].text
 
     p1p_div = t1.find("div", id="P-1p")
     p1p_hebrew = p1p_div.find("span", class_="menukad").parent.text
-    p1p_english = p1p_div.find("div", class_="meaning").findAll("strong")[-1].text
+    p1p_english = p1p_div.find("div", class_="meaning").find_all("strong")[-1].text
     p2m_div = t1.find("div", id="P-2mp")
     p2m_hebrew = p2m_div.find("span", class_="menukad").parent.text
-    p2m_english = p2m_div.find("div", class_="meaning").findAll("strong")[-1].text
+    p2m_english = p2m_div.find("div", class_="meaning").find_all("strong")[-1].text
     p2f_div = t1.find("div", id="P-2fp")
     p2f_hebrew = p2f_div.find("span", class_="menukad").parent.text
-    p2f_english = p2f_div.find("div", class_="meaning").findAll("strong")[-1].text
+    p2f_english = p2f_div.find("div", class_="meaning").find_all("strong")[-1].text
     p3m_div = t1.find("div", id="P-3mp")
     p3m_hebrew = p3m_div.find("span", class_="menukad").parent.text
-    p3m_english = p3m_div.find("div", class_="meaning").findAll("strong")[-1].text
+    p3m_english = p3m_div.find("div", class_="meaning").find_all("strong")[-1].text
     p3f_div = t1.find("div", id="P-3fp")
     p3f_hebrew = p3f_div.find("span", class_="menukad").parent.text
-    p3f_english = p3f_div.find("div", class_="meaning").findAll("strong")[-1].text
+    p3f_english = p3f_div.find("div", class_="meaning").find_all("strong")[-1].text
 
     results = {
         "Hebrew Inflection": HebrewInflection(
@@ -557,13 +557,16 @@ def convert_adj(soup):
 
 
 def extract_pos(text: str):
-    if "noun" in text.lower():
+    text = text.split(" ", 1)[0].lower()
+    if "noun" == text:
         return convert_noun
-    if "verb" in text.lower():
+    elif "adverb" == text:
+        return convert_preposition
+    elif "verb" == text:
         return convert_verb
-    if "adjective" in text.lower():
+    elif "adjective" == text:
         return convert_adj
-    if "preposition" in text.lower():
+    elif "preposition" == text:
         return convert_preposition
 
 
@@ -581,8 +584,20 @@ def translate(url) -> List[str]:
     return fun(soup)
 
 
+# Verb
 # translate("https://www.pealim.com/dict/55-lomar/")
+
+# Noun
 # translate("https://www.pealim.com/dict/8387-amir/")
+
+# Adjective
 # translate("https://www.pealim.com/dict/3801-amur/")
+
+# Noun
 # translate("https://www.pealim.com/dict/4260-tmuna/")
+
+# Preposition
 # translate("https://www.pealim.com/dict/6051-min/")
+
+# Adverb
+# translate("https://www.pealim.com/dict/4655-levad/")
