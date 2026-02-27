@@ -1,51 +1,122 @@
-from anki.hooks import addHook
+import os
+import sys
+
+from aqt import mw
+from aqt.qt import (
+    QAction,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+)
+from aqt.utils import showInfo
+
+addon_dir = os.path.dirname(__file__)
+vendor_dir = os.path.join(addon_dir, "vendor")
+if vendor_dir not in sys.path:
+    sys.path.insert(0, vendor_dir)
+
 from .convert import translate
 
 
-def populate_fields(editor):
-    editor.saveNow(lambda: _populate_fields(editor))
+action = QAction("Create Note from Pealim", mw)
 
 
-def _populate_fields(editor):
-    url = editor.note.fields[0]
+class CreateNoteDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Create Note")
+
+        self.url_input = QLineEdit(self)
+        self.url_input.setPlaceholderText("https://www.pealim.com/dict/...")
+
+        self.deck_combo = QComboBox(self)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Pealim URL:", self))
+        layout.addWidget(self.url_input)
+        layout.addWidget(QLabel("Deck:", self))
+        layout.addWidget(self.deck_combo)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            parent=self,
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def set_decks(self, decks, current_deck_id):
+        self.deck_combo.clear()
+        current_index = 0
+        for idx, (name, deck_id) in enumerate(decks):
+            self.deck_combo.addItem(name, deck_id)
+            if deck_id == current_deck_id:
+                current_index = idx
+        self.deck_combo.setCurrentIndex(current_index)
+
+
+def prompt_and_create_note():
+    dialog = CreateNoteDialog(mw)
+    decks = sorted(
+        [(deck.name, deck.id) for deck in mw.col.decks.all_names_and_ids()],
+        key=lambda d: d[0].lower(),
+    )
+    current_deck_id = mw.col.decks.current()["id"]
+    dialog.set_decks(decks, current_deck_id)
+
+    if dialog.exec() != QDialog.DialogCode.Accepted:
+        return
+    url = dialog.url_input.text().strip()
+    if not url:
+        return
+
+    deck_id = dialog.deck_combo.currentData()
 
     try:
         results = translate(url)
     except Exception as e:
-        print(e)
+        showInfo(f"Translate failed: {e}")
         return
 
-    note_name = editor.note.note_type()["name"]
-
-    vals = results.get(note_name)
-
-    if vals is None:
-        print(f"Couldn't find results for note of type/name {note_name}")
+    if not results:
+        showInfo("No results returned.")
         return
 
-    for idx, val in enumerate(vals[:-1]):
-        editor.note.fields[idx] = val
-        editor.loadNote()
+    missing_note_types = []
+    for note_type_name, fields_and_tags in results.items():
 
-    for tag in vals[-1]:
-        editor.note.add_tag(tag)
+        # print(f"{note_type_name}: {fields_and_tags}")
 
-    editor.loadNote()
+        note_type = mw.col.models.by_name(note_type_name)
+        if note_type is None:
+            missing_note_types.append(note_type_name)
+            continue
+
+        fields = fields_and_tags[:-1]
+        tags = fields_and_tags[-1]
+
+        note = mw.col.new_note(note_type)
+
+        # print(f"note: {note.keys()} {note.fields}")
+
+        for i, val in enumerate(fields):
+            note.fields[i] = "" if val is None else str(val)
+
+        if tags:
+            note.tags.extend(tags)
+
+        note.note_type()["did"] = deck_id
+
+        mw.col.add_note(note, deck_id)
+
+    if missing_note_types:
+        showInfo(f"Missing note types: {', '.join(missing_note_types)}")
+    mw.reset()
 
 
-def add_auto_button(buttons, editor):
-    auto_button = editor.addButton(
-        icon=None,
-        cmd="Pealim",
-        func=populate_fields,
-        tip="Download from Pealim",
-        toggleable=False,
-        label="",
-        keys=None,
-        disables=False,
-    )
-    buttons.append(auto_button)
-    return buttons
+action.triggered.connect(prompt_and_create_note)
 
-
-addHook("setupEditorButtons", add_auto_button)
+mw.form.menuTools.addAction(action)
