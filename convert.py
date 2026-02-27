@@ -1,14 +1,10 @@
 from typing import List, NamedTuple
 from bs4 import BeautifulSoup as bs
+import re
 import requests
 import unicodedata
 
-try:
-    from pyinflect import getInflection
-except ImportError:
-
-    def getInflection(a, b):
-        return a
+from pyinflect import getInflection
 
 
 pealim_to_jinja = {
@@ -312,7 +308,20 @@ def convert_verb(soup):
         meaning = div.find("div", class_="meaning").find_all("strong")[-1].text
 
         if peal.startswith("AP"):
-            meaning = getInflection(meaning, "VBG")
+            # We use the participle form of the present tense
+            if meaning.startswith("is "):
+                meaning = meaning.replace("is ", "")
+            elif meaning.startswith("are "):
+                meaning = meaning.replace("are ", "")
+            else:
+                # Assume the first word is the verb
+                verb, *rest = re.sub(r"\(.*s\)", "", meaning).split(" ", 1)
+                (verb,) = getInflection(
+                    verb, "VBG", inflect_oov=True
+                )
+                meaning = " ".join([verb] + rest)
+
+        assert isinstance(meaning, str)
 
         if peal.startswith("IMP"):
             word = word.strip("!\u200f")
@@ -606,6 +615,9 @@ def translate(url) -> List[str]:
 
 # Verb
 # translate("https://www.pealim.com/dict/55-lomar/")
+# translate("https://www.pealim.com/dict/974-lehitlabesh/")
+# translate("https://www.pealim.com/dict/1132-lenagev/")
+# translate("https://www.pealim.com/dict/2241-lismoach/")
 
 # Verb without imperative
 # translate("https://www.pealim.com/dict/795-luchal/")
@@ -628,4 +640,3 @@ def translate(url) -> List[str]:
 
 # Adverb
 # translate("https://www.pealim.com/dict/4655-levad/")
-
