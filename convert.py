@@ -3,12 +3,7 @@ from bs4 import BeautifulSoup as bs
 import requests
 import unicodedata
 
-try:
-    from pyinflect import getInflection
-except ImportError:
-
-    def getInflection(a, b):
-        return a
+from pyinflect import getInflection
 
 
 pealim_to_jinja = {
@@ -312,7 +307,11 @@ def convert_verb(soup):
         meaning = div.find("div", class_="meaning").find_all("strong")[-1].text
 
         if peal.startswith("AP"):
-            meaning = getInflection(meaning, "VBG")
+            (meaning,) = getInflection(
+                meaning.replace("(s)", ""), "VBG", inflect_oov=True
+            )
+
+        assert isinstance(meaning, str)
 
         if peal.startswith("IMP"):
             word = word.strip("!\u200f")
@@ -628,4 +627,3 @@ def translate(url) -> List[str]:
 
 # Adverb
 # translate("https://www.pealim.com/dict/4655-levad/")
-
