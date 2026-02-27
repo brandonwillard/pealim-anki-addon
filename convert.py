@@ -302,6 +302,10 @@ def convert_verb(soup):
 
     for peal, jinj in pealim_to_jinja.items():
         div = soup.find("div", id=peal)
+
+        if not div:
+            continue
+
         word = div.find("span", class_="menukad").text
         # pron = div.find("div", class_="transcription").text
 
@@ -322,55 +326,68 @@ def convert_verb(soup):
 
     paal_tags = convert_shoresh(shoresh)
 
-    inf_card = HebrewBasic(
-        *out_dict["inf"],
-        "",
-        "",
-        ["infinitive", binyan] + paal_tags,
-    )
-    present_card = HebrewPresentTenseConjugation(
-        *out_dict["p_x_s_m"],
-        *out_dict["p_x_s_f"],
-        *out_dict["p_x_p_m"],
-        *out_dict["p_x_p_f"],
-        "",
-        ["הוה", binyan] + paal_tags,
-    )
-    past_card = HebrewPastTenseConjugation(
-        *out_dict["pp_1_s_x"],
-        *out_dict["pp_2_s_m"],
-        *out_dict["pp_2_s_f"],
-        *out_dict["pp_3_s_m"],
-        *out_dict["pp_3_s_f"],
-        *out_dict["pp_1_p_x"],
-        *out_dict["pp_2_p_m"],
-        *out_dict["pp_2_p_f"],
-        *out_dict["pp_3_p_x"],
-        "",
-        ["עבר", binyan] + paal_tags,
-    )
-    future_card = HebrewFutureTenseConjugation(
-        *out_dict["f_1_s_x"],
-        *out_dict["f_2_s_m"],
-        *out_dict["f_2_s_f"],
-        *out_dict["f_3_s_m"],
-        *out_dict["f_3_s_f"],
-        *out_dict["f_1_p_x"],
-        *out_dict["f_2_p_m"],
-        *out_dict["f_2_p_f"],
-        *out_dict["f_3_p_m"],
-        *out_dict["f_3_p_f"],
-        "",
-        ["עתיד", binyan] + paal_tags,
-    )
-    imp_card = HebrewImperativeConjugation(
-        *out_dict["im_2_s_m"],
-        *out_dict["im_2_s_f"],
-        *out_dict["im_2_p_m"],
-        *out_dict["im_2_p_f"],
-        "",
-        ["צווי", binyan] + paal_tags,
-    )
+    inf_card = None
+    if "inf" in out_dict:
+        inf_card = HebrewBasic(
+            *out_dict["inf"],
+            "",
+            "",
+            ["infinitive", binyan] + paal_tags,
+        )
+
+    present_card = None
+    if "p_x_s_m" in out_dict:
+        present_card = HebrewPresentTenseConjugation(
+            *out_dict["p_x_s_m"],
+            *out_dict["p_x_s_f"],
+            *out_dict["p_x_p_m"],
+            *out_dict["p_x_p_f"],
+            "",
+            ["הוה", binyan] + paal_tags,
+        )
+
+    past_card = None
+    if "pp_1_s_x" in out_dict:
+        past_card = HebrewPastTenseConjugation(
+            *out_dict["pp_1_s_x"],
+            *out_dict["pp_2_s_m"],
+            *out_dict["pp_2_s_f"],
+            *out_dict["pp_3_s_m"],
+            *out_dict["pp_3_s_f"],
+            *out_dict["pp_1_p_x"],
+            *out_dict["pp_2_p_m"],
+            *out_dict["pp_2_p_f"],
+            *out_dict["pp_3_p_x"],
+            "",
+            ["עבר", binyan] + paal_tags,
+        )
+    future_card = None
+    if "f_1_s_x" in out_dict:
+        future_card = HebrewFutureTenseConjugation(
+            *out_dict["f_1_s_x"],
+            *out_dict["f_2_s_m"],
+            *out_dict["f_2_s_f"],
+            *out_dict["f_3_s_m"],
+            *out_dict["f_3_s_f"],
+            *out_dict["f_1_p_x"],
+            *out_dict["f_2_p_m"],
+            *out_dict["f_2_p_f"],
+            *out_dict["f_3_p_m"],
+            *out_dict["f_3_p_f"],
+            "",
+            ["עתיד", binyan] + paal_tags,
+        )
+
+    imp_card = None
+    if "im_2_s_m" in out_dict:
+        imp_card = HebrewImperativeConjugation(
+            *out_dict["im_2_s_m"],
+            *out_dict["im_2_s_f"],
+            *out_dict["im_2_p_m"],
+            *out_dict["im_2_p_f"],
+            "",
+            ["צווי", binyan] + paal_tags,
+        )
 
     tags += [binyan]
 
@@ -395,9 +412,12 @@ def convert_noun(soup):
 
     t1 = soup.find("table", class_="conjugation-table")
 
-    singular = t1.find("div", id="s").find("span", class_="menukad").text
-    # singular_pr = t1.find("div", id="s").find("div", class_="transcription").text
-    singular_meaning = t1.find("div", id="s").find("div", class_="meaning").text
+    singular_div = t1.find("div", id="s")
+    singular, singular_meaning = "", ""
+    if singular_div is not None:
+        singular = t1.find("div", id="s").find("span", class_="menukad").text
+        # singular_pr = t1.find("div", id="s").find("div", class_="transcription").text
+        singular_meaning = t1.find("div", id="s").find("div", class_="meaning").text
 
     plural_div = t1.find("div", id="p")
     plural, plural_meaning = "", ""
@@ -437,35 +457,35 @@ def convert_preposition(soup):
     t1 = soup.find("table", class_="conjugation-table")
 
     s1p_div = t1.find("div", id="P-1s")
-    s1p_hebrew = s1p_div.find("span", class_="menukad").parent.text
+    s1p_hebrew = s1p_div.find("span", class_="menukad").text
     s1p_english = s1p_div.find("div", class_="meaning").find_all("strong")[-1].text
     s2m_div = t1.find("div", id="P-2ms")
-    s2m_hebrew = s2m_div.find("span", class_="menukad").parent.text
+    s2m_hebrew = s2m_div.find("span", class_="menukad").text
     s2m_english = s2m_div.find("div", class_="meaning").find_all("strong")[-1].text
     s2f_div = t1.find("div", id="P-2fs")
-    s2f_hebrew = s2f_div.find("span", class_="menukad").parent.text
+    s2f_hebrew = s2f_div.find("span", class_="menukad").text
     s2f_english = s2f_div.find("div", class_="meaning").find_all("strong")[-1].text
     s3m_div = t1.find("div", id="P-3ms")
-    s3m_hebrew = s3m_div.find("span", class_="menukad").parent.text
+    s3m_hebrew = s3m_div.find("span", class_="menukad").text
     s3m_english = s3m_div.find("div", class_="meaning").find_all("strong")[-1].text
     s3f_div = t1.find("div", id="P-3fs")
-    s3f_hebrew = s3f_div.find("span", class_="menukad").parent.text
+    s3f_hebrew = s3f_div.find("span", class_="menukad").text
     s3f_english = s3f_div.find("div", class_="meaning").find_all("strong")[-1].text
 
     p1p_div = t1.find("div", id="P-1p")
-    p1p_hebrew = p1p_div.find("span", class_="menukad").parent.text
+    p1p_hebrew = p1p_div.find("span", class_="menukad").text
     p1p_english = p1p_div.find("div", class_="meaning").find_all("strong")[-1].text
     p2m_div = t1.find("div", id="P-2mp")
-    p2m_hebrew = p2m_div.find("span", class_="menukad").parent.text
+    p2m_hebrew = p2m_div.find("span", class_="menukad").text
     p2m_english = p2m_div.find("div", class_="meaning").find_all("strong")[-1].text
     p2f_div = t1.find("div", id="P-2fp")
-    p2f_hebrew = p2f_div.find("span", class_="menukad").parent.text
+    p2f_hebrew = p2f_div.find("span", class_="menukad").text
     p2f_english = p2f_div.find("div", class_="meaning").find_all("strong")[-1].text
     p3m_div = t1.find("div", id="P-3mp")
-    p3m_hebrew = p3m_div.find("span", class_="menukad").parent.text
+    p3m_hebrew = p3m_div.find("span", class_="menukad").text
     p3m_english = p3m_div.find("div", class_="meaning").find_all("strong")[-1].text
     p3f_div = t1.find("div", id="P-3fp")
-    p3f_hebrew = p3f_div.find("span", class_="menukad").parent.text
+    p3f_hebrew = p3f_div.find("span", class_="menukad").text
     p3f_english = p3f_div.find("div", class_="meaning").find_all("strong")[-1].text
 
     results = {
@@ -520,17 +540,17 @@ def convert_adj(soup):
 
     t1 = soup.find("table", class_="conjugation-table")
 
-    m_singular = t1.find("div", id="ms-a").find("span", class_="menukad").parent.text
+    m_singular = t1.find("div", id="ms-a").find("span", class_="menukad").text
     # m_singular_pr = t1.find("div", id="ms-a").find("div", class_="transcription").text
     m_singular_meaning = t1.find("div", id="ms-a").find("div", class_="meaning").text
-    m_plural = t1.find("div", id="mp-a").find("span", class_="menukad").parent.text
+    m_plural = t1.find("div", id="mp-a").find("span", class_="menukad").text
     # m_plural_pr = t1.find("div", id="mp-a").find("div", class_="transcription").text
     m_plural_meaning = t1.find("div", id="mp-a").find("div", class_="meaning").text
 
-    f_singular = t1.find("div", id="fs-a").find("span", class_="menukad").parent.text
+    f_singular = t1.find("div", id="fs-a").find("span", class_="menukad").text
     # f_singular_pr = t1.find("div", id="fs-a").find("div", class_="transcription").text
     f_singular_meaning = t1.find("div", id="fs-a").find("div", class_="meaning").text
-    f_plural = t1.find("div", id="fp-a").find("span", class_="menukad").parent.text
+    f_plural = t1.find("div", id="fp-a").find("span", class_="menukad").text
     # f_plural_pr = t1.find("div", id="fp-a").find("div", class_="transcription").text
     f_plural_meaning = t1.find("div", id="fp-a").find("div", class_="meaning").text
 
@@ -587,17 +607,25 @@ def translate(url) -> List[str]:
 # Verb
 # translate("https://www.pealim.com/dict/55-lomar/")
 
+# Verb without imperative
+# translate("https://www.pealim.com/dict/795-luchal/")
+
 # Noun
 # translate("https://www.pealim.com/dict/8387-amir/")
 
 # Adjective
 # translate("https://www.pealim.com/dict/3801-amur/")
+# (With sound)
+# translate("https://www.pealim.com/dict/5549-shamen/")
 
 # Noun
 # translate("https://www.pealim.com/dict/4260-tmuna/")
+# (No singular)
+# translate("https://www.pealim.com/dict/6218-mishkafayim/")
 
 # Preposition
 # translate("https://www.pealim.com/dict/6051-min/")
 
 # Adverb
 # translate("https://www.pealim.com/dict/4655-levad/")
+
