@@ -585,12 +585,38 @@ def convert_adj(soup):
     return results
 
 
-def extract_pos(text: str):
-    text = text.split(" ", 1)[0].lower()
+def convert_adverb(soup):
+
+    hebrew = soup.find("span", class_="menukad").text
+    hebrew_check = strip_accents(hebrew)
+    english = soup.find("div", class_="lead").text
+
+    inf_card = HebrewBasic(
+        hebrew,
+        hebrew_check,
+        english,
+        "",
+        "",
+        ["adverb"],
+    )
+
+    return {
+        "Hebrew Basic and Reversed Type-in": inf_card
+    }
+
+
+def extract_pos(soup: str):
+    header = soup.find("h2", class_="page-header")
+    inflection = "inflection" in header.text.lower()
+    text = header.next_sibling.text.split(" ", 1)[0].lower()
+
     if "noun" == text:
         return convert_noun
     elif "adverb" == text:
-        return convert_preposition
+        if inflection:
+            return convert_preposition
+        else:
+            return convert_adverb
     elif "verb" == text:
         return convert_verb
     elif "adjective" == text:
@@ -606,10 +632,7 @@ def get_subheader(soup) -> str:
 def translate(url) -> List[str]:
     resp = requests.get(url)
     soup = bs(resp.content, features="html.parser")
-
-    pos_p = get_subheader(soup)
-    fun = extract_pos(pos_p)
-
+    fun = extract_pos(soup)
     return fun(soup)
 
 
@@ -640,3 +663,4 @@ def translate(url) -> List[str]:
 
 # Adverb
 # translate("https://www.pealim.com/dict/4655-levad/")
+# translate("https://www.pealim.com/dict/8374-bichlal/")
